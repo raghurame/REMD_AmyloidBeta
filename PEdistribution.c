@@ -117,18 +117,45 @@ void printPotDistribution (PE_DISTRIBUTION *potDistribution, int nPotentialBins,
 	}
 }
 
-void printAvgSDTemperature (PE_DATA *inputData, float minTimerange, float maxTimerange)
+void printAvgSDTemperature (PE_DATA *inputData, int nDatalines, float minTimerange, float maxTimerange)
 {
-	
+	float avgTemp, sdTemp, nDenom = 0;
+
+	for (int i = 0; i < nDatalines; ++i)
+	{
+		if ((inputData[i].time >= minTimerange) && (inputData[i].time <= maxTimerange))
+		{
+			avgTemp += inputData[i].temperature;
+			nDenom++;
+		}
+	}
+
+	avgTemp /= nDenom;
+
+	for (int i = 0; i < nDatalines; ++i)
+	{
+		if ((inputData[i].time >= minTimerange) && (inputData[i].time <= maxTimerange))
+		{
+			sdTemp += pow ((inputData[i].temperature - avgTemp), 2);
+		}
+	}
+
+	sdTemp = sqrt (sdTemp / nDenom);
+
+	printf("Avg. temperature: %f\nStdev. temperature: %f\n\n", avgTemp, sdTemp);
 }
 
 int main(int argc, char const *argv[])
 {
+	if (argc != 3)
+	{
+		printf("\nREQUIRED ARGUMENTS:\n~~~~~~~~~~~~~~~~~~~\n\n[~] argv[0] = ./program\n[~] argv[1] = input xvg file name\n[~] argv[2] = output plot file name\n\n");
+		exit (1);
+	}
+
 	FILE *input, *output;
 	input = fopen (argv[1], "r");
 	output = fopen (argv[2], "w");
-
-	char lineString[3000];
 
 	int nDatalines = countDatalines (input);
 
@@ -158,7 +185,7 @@ int main(int argc, char const *argv[])
 	printPotDistribution (potDistribution, (int) 20 + 2, output);
 
 	// Calculating avg. and SD of temperature within the selected range
-	printAvgSDTemperature (inputData, minTimerange, maxTimerange);
+	printAvgSDTemperature (inputData, nDatalines, minTimerange, maxTimerange);
 
 	fclose (input);
 	fclose (output);
