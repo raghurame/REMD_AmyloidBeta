@@ -129,7 +129,7 @@ void printPotDistribution (PE_DISTRIBUTION *potDistribution, int nPotentialBins,
 
 void printAvgSDTemperature (PE_DATA *inputData, int nDatalines, float minTimerange, float maxTimerange, const char *inputFilename)
 {
-	float avgTemp, sdTemp, nDenom = 0;
+	float avgTemp = 0, sdTemp = 0, nDenom = 0;
 
 	for (int i = 0; i < nDatalines; ++i)
 	{
@@ -170,7 +170,7 @@ int main(int argc, char const *argv[])
 {
 	if (argc != 2)
 	{
-		printf("\nREQUIRED ARGUMENTS:\n~~~~~~~~~~~~~~~~~~~\n\n[~] argv[0] = ./program\n[~] argv[1] = input xvg file name\n\n");
+		printf("\nREQUIRED ARGUMENTS:\n~~~~~~~~~~~~~~~~~~~\n\n[~] argv[0] = ./program\n[~] argv[1] = input xvg file name\n\nEXPECTED COLUMNS:\n~~~~~~~~~~~~~~~~~\n1. time, 2. potential energy, 3. kinetic energy, 4. total energy, 5. temperature\n\n");
 		exit (1);
 	}
 
