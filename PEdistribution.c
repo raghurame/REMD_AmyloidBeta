@@ -79,8 +79,18 @@ void findMinMaxPotential (PE_DATA *inputData, int nDatalines, float *minPotentia
 	}
 }
 
-void selectTimerange (float *minTimerange, float *maxTimerange)
+void selectTimerange (PE_DATA *inputData, int nDatalines, float *minTimerange, float *maxTimerange)
 {
+	float beginningTime, endTime;
+	for (int i = 0; i < nDatalines; ++i)
+	{
+		if (i == 0) {
+			beginningTime = inputData[i].time; }
+
+		endTime = inputData[i].time;
+	}
+
+	printf("The time range present in the input file: %f to %f\n", beginningTime, endTime);
 	printf("Enter min time in the input range: "); scanf ("%f", &(*minTimerange)); printf("\n");
 	printf("Enter max time in the input range: "); scanf ("%f", &(*maxTimerange)); printf("\n");
 }
@@ -117,7 +127,7 @@ void printPotDistribution (PE_DISTRIBUTION *potDistribution, int nPotentialBins,
 	}
 }
 
-void printAvgSDTemperature (PE_DATA *inputData, int nDatalines, float minTimerange, float maxTimerange)
+void printAvgSDTemperature (PE_DATA *inputData, int nDatalines, float minTimerange, float maxTimerange, const char *inputFilename)
 {
 	float avgTemp, sdTemp, nDenom = 0;
 
@@ -143,19 +153,35 @@ void printAvgSDTemperature (PE_DATA *inputData, int nDatalines, float minTimeran
 	sdTemp = sqrt (sdTemp / nDenom);
 
 	printf("Avg. temperature: %f\nStdev. temperature: %f\n\n", avgTemp, sdTemp);
+
+	FILE *outputTempStats;
+	char *tempStatsFilename;
+	tempStatsFilename = (char *) malloc (50 * sizeof (char));
+	snprintf (tempStatsFilename, 50, "%s.temp", inputFilename);
+	outputTempStats = fopen (tempStatsFilename, "w");
+
+	fprintf(outputTempStats, "avg/stdev temperature: %f %f\n\n", avgTemp, sdTemp);
+
+	fclose (outputTempStats);
+	free (tempStatsFilename);
 }
 
 int main(int argc, char const *argv[])
 {
-	if (argc != 3)
+	if (argc != 2)
 	{
-		printf("\nREQUIRED ARGUMENTS:\n~~~~~~~~~~~~~~~~~~~\n\n[~] argv[0] = ./program\n[~] argv[1] = input xvg file name\n[~] argv[2] = output plot file name\n\n");
+		printf("\nREQUIRED ARGUMENTS:\n~~~~~~~~~~~~~~~~~~~\n\n[~] argv[0] = ./program\n[~] argv[1] = input xvg file name\n\n");
 		exit (1);
 	}
 
 	FILE *input, *output;
 	input = fopen (argv[1], "r");
-	output = fopen (argv[2], "w");
+
+	char *outputString;
+	outputString = (char *) malloc (50 * sizeof (char));
+	snprintf (outputString, 50, "%s.output", argv[1]);
+
+	output = fopen (outputString, "w");
 
 	int nDatalines = countDatalines (input);
 
@@ -166,7 +192,7 @@ int main(int argc, char const *argv[])
 	inputData = readInputData (inputData, input);
 
 	float minTimerange, maxTimerange;
-	selectTimerange (&minTimerange, &maxTimerange);
+	selectTimerange (inputData, nDatalines, &minTimerange, &maxTimerange);
 
 	float minPotential, maxPotential;
 	findMinMaxPotential (inputData, nDatalines, &minPotential, &maxPotential, minTimerange, maxTimerange);
@@ -185,7 +211,7 @@ int main(int argc, char const *argv[])
 	printPotDistribution (potDistribution, (int) 20 + 2, output);
 
 	// Calculating avg. and SD of temperature within the selected range
-	printAvgSDTemperature (inputData, nDatalines, minTimerange, maxTimerange);
+	printAvgSDTemperature (inputData, nDatalines, minTimerange, maxTimerange, argv[1]);
 
 	fclose (input);
 	fclose (output);
