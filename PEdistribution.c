@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
+#include <dirent.h>
 
 typedef struct peData
 {
@@ -166,20 +167,14 @@ void printAvgSDTemperature (PE_DATA *inputData, int nDatalines, float minTimeran
 	free (tempStatsFilename);
 }
 
-int main(int argc, char const *argv[])
+void computePEdistribution (const char *inputFilename)
 {
-	if (argc != 2)
-	{
-		printf("\nREQUIRED ARGUMENTS:\n~~~~~~~~~~~~~~~~~~~\n\n[~] argv[0] = ./program\n[~] argv[1] = input xvg file name\n\nEXPECTED COLUMNS:\n~~~~~~~~~~~~~~~~~\n1. time, 2. potential energy, 3. kinetic energy, 4. total energy, 5. temperature\n\n");
-		exit (1);
-	}
-
 	FILE *input, *output;
-	input = fopen (argv[1], "r");
+	input = fopen (inputFilename, "r");
 
 	char *outputString;
 	outputString = (char *) malloc (50 * sizeof (char));
-	snprintf (outputString, 50, "%s.output", argv[1]);
+	snprintf (outputString, 50, "%s.output", inputFilename);
 
 	output = fopen (outputString, "w");
 
@@ -211,9 +206,27 @@ int main(int argc, char const *argv[])
 	printPotDistribution (potDistribution, (int) 20 + 2, output);
 
 	// Calculating avg. and SD of temperature within the selected range
-	printAvgSDTemperature (inputData, nDatalines, minTimerange, maxTimerange, argv[1]);
+	printAvgSDTemperature (inputData, nDatalines, minTimerange, maxTimerange, inputFilename);
 
 	fclose (input);
 	fclose (output);
+}
+
+int main(int argc, char const *argv[])
+{
+	DIR *parentDirectory;
+	struct dirent *filePointer;
+
+	parentDirectory = opendir ("./");
+
+	while ((filePointer = readdir (parentDirectory)))
+	{
+		if (strstr (filePointer->d_name, ".xvg") && !strstr (filePointer->d_name, ".xvg.temp") && !strstr (filePointer->d_name, "xvg.output"))
+		{
+			printf("\n~~~~~~~~~~~~~~~~\nPROCESSING FILE: %s\n~~~~~~~~~~~~~~~~\n\n", filePointer -> d_name);
+			computePEdistribution (filePointer -> d_name);
+		}
+	}
+
 	return 0;
 }
