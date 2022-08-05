@@ -96,9 +96,20 @@ void selectTimerange (PE_DATA *inputData, int nDatalines, float *minTimerange, f
 	printf("Enter max time in the input range: "); scanf ("%f", &(*maxTimerange)); printf("\n");
 }
 
+PE_DISTRIBUTION *resetPotDistribution (PE_DISTRIBUTION *potDistribution, int nPotentialBins)
+{
+	for (int i = 0; i < nPotentialBins; ++i)
+	{
+		potDistribution[i].count = 0;
+	}
+	return potDistribution;
+}
+
 PE_DISTRIBUTION *computeDistribution (PE_DISTRIBUTION *potDistribution, PE_DATA *inputData, int nDatalines, float minPotential, float maxPotential, float potentialBinWidth, int nPotentialBins)
 {
 	float currentBinlo, currentBinhi;
+
+	potDistribution = resetPotDistribution (potDistribution, nPotentialBins);
 
 	for (int i = 0; i < nPotentialBins; ++i)
 	{
@@ -221,7 +232,7 @@ int main(int argc, char const *argv[])
 
 	while ((filePointer = readdir (parentDirectory)))
 	{
-		if (strstr (filePointer->d_name, ".xvg") && !strstr (filePointer->d_name, ".xvg.temp") && !strstr (filePointer->d_name, "xvg.output"))
+		if (strstr (filePointer -> d_name, ".xvg") && !strstr (filePointer -> d_name, ".xvg.temp") && !strstr (filePointer -> d_name, "xvg.output"))
 		{
 			printf("\n~~~~~~~~~~~~~~~~\nPROCESSING FILE: %s\n~~~~~~~~~~~~~~~~\n\n", filePointer -> d_name);
 			computePEdistribution (filePointer -> d_name);
