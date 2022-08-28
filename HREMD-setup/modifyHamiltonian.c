@@ -72,23 +72,69 @@ typedef struct molecule
 	int nMolecules;
 } MOLECULE;
 
-TOPOLOGY_ATOMS *readTopAtoms (FILE *topolTopITP, TOPOLOGY_BOOL topCurrentPosition, TOPOLOGY_ATOMS *inputAtoms)
+TOPOLOGY_ATOMS *readTopAtoms (FILE *topolTopITP, TOPOLOGY_BOOL topCurrentPosition, TOPOLOGY_ATOMS *inputAtoms, int *nAtoms)
 {
 	rewind (topolTopITP);
-	char lineString[2000];
+	char lineString[2000], atomString[2000];
 
+	(*nAtoms) = 0;
+
+	// Counting the number of entries in the [ atoms ] directive
 	while (fgets (lineString, 2000, topolTopITP) != NULL)
 	{
-			// Count the number of directives, include statements in this manner. If necessary, make a new function for this purpose.
 		if (lineString[0] != ';')
 		{
-			if (lineString[0] == '#' || lineString[0] == '[')
+			if ((topCurrentPosition.atoms == 1) && (lineString[0] == '[')) {
+				topCurrentPosition.atoms = 0; }
+
+			if (topCurrentPosition.atoms == 1)
 			{
-				printf("%s", lineString);
-				sleep (1);
+				for (int i = 0; lineString[i] != ';'; ++i) {
+					atomString[i] = lineString[i];
+					atomString[i + 1] = '\0'; }
+
+				(*nAtoms)++;
 			}
+
+			if (strstr (lineString, "[ atoms ]")) {
+				topCurrentPosition.atoms = 1; }
 		}
 	}
+
+	// One empty line was also counted in the previous loop
+	printf("Number of atoms detected in topology file: %d\n", (*nAtoms) - 1);
+
+	inputAtoms = (TOPOLOGY_ATOMS *) malloc ((*nAtoms) * sizeof (TOPOLOGY_ATOMS));
+
+	rewind (topolTopITP);
+	int currentAtom = 0;
+	// Storing the information under [ atoms ] directive
+	while (fgets (lineString, 2000, topolTopITP) != NULL)
+	{
+		if (lineString[0] != ';')
+		{
+			if ((topCurrentPosition.atoms == 1) && (lineString[0] == '[')) {
+				topCurrentPosition.atoms = 0; }
+
+			if (topCurrentPosition.atoms == 1)
+			{
+				for (int i = 0; lineString[i] != ';'; ++i) {
+					atomString[i] = lineString[i];
+					atomString[i + 1] = '\0'; }
+
+				sscanf (atomString, "%d\n", &currentAtom);
+				sscanf (atomString, "%d %s %d %s %s %d %f %f", &inputAtoms[currentAtom - 1].nr, &inputAtoms[currentAtom - 1].type, &inputAtoms[currentAtom - 1].resnr, &inputAtoms[currentAtom - 1].residue, &inputAtoms[currentAtom - 1].atom, &inputAtoms[currentAtom - 1].cgnr, &inputAtoms[currentAtom - 1].charge, &inputAtoms[currentAtom - 1].mass);
+			}
+
+			if (strstr (lineString, "[ atoms ]")) {
+				topCurrentPosition.atoms = 1; }
+		}
+	}
+
+	// To compensate for the extra empty line counted in the first 'while' loop
+	(*nAtoms) -= 1;
+
+	return inputAtoms;
 }
 
 int main(int argc, char const *argv[])
@@ -116,7 +162,10 @@ int main(int argc, char const *argv[])
 	SYSTEM *inputSystem;
 	MOLECULE *inputMolecule;
 
-	inputAtoms = readTopAtoms (topolTopITP, topCurrentPosition, inputAtoms);
+	int nAtoms;
+
+	inputAtoms = readTopAtoms (topolTopITP, topCurrentPosition, inputAtoms, &nAtoms);
+	
 
 	fclose (ffBondedITP);
 	fclose (ffNonbondedITP);
