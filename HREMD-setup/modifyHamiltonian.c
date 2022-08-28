@@ -27,7 +27,7 @@ int main(int argc, char const *argv[])
 	ffNonbondedITP = fopen ("ffnonbonded.itp");
 	topolTopITP = fopen ("topol.top");
 
-
+	
 
 	fclose (ffBondedITP);
 	fclose (ffNonbondedITP);
