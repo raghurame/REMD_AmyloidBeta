@@ -63,14 +63,21 @@ typedef struct posre
 typedef struct system
 {
 	char name[1000];
-} SYSTEM;
+} TOPOLOGY_SYSTEM;
 
 // Molecule directive can occur multiple times in the top file
 typedef struct molecule
 {
 	char name[1000];
 	int nMolecules;
-} MOLECULE;
+} TOPOLOGY_MOLECULE;
+
+typedef struct bondedDefines
+{
+	char defineString, defineType;
+	float value, constant;
+	int np;
+} BONDED_DEFINES;
 
 TOPOLOGY_ATOMS *readTopAtoms (FILE *topolTopITP, TOPOLOGY_BOOL topCurrentPosition, TOPOLOGY_ATOMS *inputAtoms, int *nAtoms)
 {
@@ -137,6 +144,38 @@ TOPOLOGY_ATOMS *readTopAtoms (FILE *topolTopITP, TOPOLOGY_BOOL topCurrentPositio
 	return inputAtoms;
 }
 
+BONDED_DEFINES *readBondedITP (FILE *ffBondedITP, TOPOLOGY_BOOL topCurrentPosition, BONDED_DEFINES **inputBondDefines, BONDED_DEFINES **inputAngleDefines, BONDED_DEFINES **inputProperDihedralDefines, BONDED_DEFINES **inputImproperDihedralDefines, int *nBondDefines, int *nAngleDefines, int *nProperDihedralDefines, int *nImproperDihedralDefines)
+{
+	rewind (ffBondedITP);
+	char lineString[2000];
+
+	// Counting the number of define statements corresponding to bonds, angles, dihedrals, and impropers
+	(*nBondDefines) = 0;
+	(*nAngleDefines) = 0;
+	(*nProperDihedralDefines) = 0;
+	(*nImproperDihedralDefines) = 0;
+
+	while (fgets (lineString, 2000, ffBondedITP) != NULL)
+	{
+		if (lineString[0] != ';' && lineString[0] == '#')
+		{
+			if (strstr (lineString, "gb_")) {
+				(*nBondDefines)++; }
+
+			if (strstr (lineString, "ga_")) {
+				(*nAngleDefines)++; }
+
+			if (strstr (lineString, "gi_")) {
+				(*nImproperDihedralDefines)++; }
+
+			if (strstr (lineString, "gd_")) {
+				(*nProperDihedralDefines)++; }
+		}
+	}
+
+	printf("N defines:\n\n  Bonds: %d\n  Angles: %d\n  Proper dihedrals: %d\n  Improper dihedrals: %d\n\n", (*nBondDefines), (*nAngleDefines), (*nProperDihedralDefines), (*nImproperDihedralDefines));
+}
+
 int main(int argc, char const *argv[])
 {
 	FILE *ffBondedITP, *ffNonbondedITP, *topolTopITP, *ffBondedITP_output, *ffNonbondedITP_output, *topolTopITP_output;
@@ -159,13 +198,14 @@ int main(int argc, char const *argv[])
 	TOPOLOGY_ANGLES *inputAngles;
 	TOPOLOGY_DIHEDRALS *inputDihedrals;
 	POSITIONAL_RESTRAINTS *inputRestraints;
-	SYSTEM *inputSystem;
-	MOLECULE *inputMolecule;
+	TOPOLOGY_SYSTEM *inputSystem;
+	TOPOLOGY_MOLECULE *inputMolecule;
+	BONDED_DEFINES *inputBondDefines, *inputAngleDefines, *inputProperDihedralDefines, *inputImproperDihedralDefines;
 
-	int nAtoms;
+	int nAtoms, nBondDefines, nAngleDefines, nProperDihedralDefines, nImproperDihedralDefines;
 
 	inputAtoms = readTopAtoms (topolTopITP, topCurrentPosition, inputAtoms, &nAtoms);
-	
+	readBondedITP (ffBondedITP, topCurrentPosition, &inputBondDefines, &inputAngleDefines, &inputProperDihedralDefines, &inputImproperDihedralDefines, &nBondDefines, &nAngleDefines, &nProperDihedralDefines, &nImproperDihedralDefines);
 
 	fclose (ffBondedITP);
 	fclose (ffNonbondedITP);
