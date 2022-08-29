@@ -174,6 +174,39 @@ BONDED_DEFINES *readBondedITP (FILE *ffBondedITP, TOPOLOGY_BOOL topCurrentPositi
 	}
 
 	printf("N defines:\n\n  Bonds: %d\n  Angles: %d\n  Proper dihedrals: %d\n  Improper dihedrals: %d\n\n", (*nBondDefines), (*nAngleDefines), (*nProperDihedralDefines), (*nImproperDihedralDefines));
+
+	// Store the values in define statements
+	(*inputBondDefines) = (BONDED_DEFINES *) malloc ((*nBondDefines) * sizeof (BONDED_DEFINES));
+	(*inputAngleDefines) = (BONDED_DEFINES *) malloc ((*nAngleDefines) * sizeof (BONDED_DEFINES));
+	(*inputProperDihedralDefines) = (BONDED_DEFINES *) malloc ((*nProperDihedralDefines) * sizeof (BONDED_DEFINES));
+	(*inputImproperDihedralDefines) = (BONDED_DEFINES *) malloc ((*nImproperDihedralDefines) * sizeof (BONDED_DEFINES));
+
+	rewind (ffBondedITP);
+
+	int currentBondDefine = 0, currentAngleDefine = 0, currentProperDihedralDefine = 0, currentImproperDihedralDefine = 0;
+
+	while (fgets (lineString, 2000, ffBondedITP) != NULL)
+	{
+		if (lineString[0] != ';' && lineString[0] == '#')
+		{
+			if (strstr (lineString, "gb_")) {
+				sscanf (lineString, "%s %s %f %f\n", &(*inputBondDefines)[currentBondDefine].defineString, &(*inputBondDefines)[currentBondDefine].defineType, &(*inputBondDefines)[currentBondDefine].value, &(*inputBondDefines)[currentBondDefine].constant);
+				currentBondDefine++; }
+
+			if (strstr (lineString, "ga_")) {
+				sscanf (lineString, "%s %s %f %f\n", &(*inputAngleDefines)[currentAngleDefine].defineString, &(*inputAngleDefines)[currentAngleDefine].defineType, &(*inputAngleDefines)[currentAngleDefine].value, &(*inputAngleDefines)[currentAngleDefine].constant);
+				currentAngleDefine++; }
+
+			if (strstr (lineString, "gi_")) {
+				sscanf (lineString, "%s %s %f %f\n", &(*inputImproperDihedralDefines)[currentImproperDihedralDefine].defineString, &(*inputImproperDihedralDefines)[currentImproperDihedralDefine].defineType, &(*inputImproperDihedralDefines)[currentImproperDihedralDefine].value, &(*inputImproperDihedralDefines)[currentImproperDihedralDefine].constant);
+				currentImproperDihedralDefine++; }
+
+			if (strstr (lineString, "gd_")) {
+				sscanf (lineString, "%s %s %f %f %d\n", &(*inputProperDihedralDefines)[currentProperDihedralDefine].defineString, &(*inputProperDihedralDefines)[currentProperDihedralDefine].defineType, &(*inputProperDihedralDefines)[currentProperDihedralDefine].value, &(*inputProperDihedralDefines)[currentProperDihedralDefine].constant, &(*inputProperDihedralDefines)[currentProperDihedralDefine].np);
+				currentProperDihedralDefine++; }
+		}
+	}
+
 }
 
 int main(int argc, char const *argv[])
@@ -185,11 +218,6 @@ int main(int argc, char const *argv[])
 	ffBondedITP_output = fopen (argv[4], "w");
 	ffNonbondedITP_output = fopen (argv[5], "w");
 	topolTopITP_output = fopen (argv[6], "w");
-
-	/*
-		Ignore the lines starting with ';'
-		Always take the lines starting with '#'
-	*/
 
 	TOPOLOGY_BOOL topCurrentPosition;
 	TOPOLOGY_ATOMS *inputAtoms;
