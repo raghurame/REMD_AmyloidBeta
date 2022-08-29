@@ -79,6 +79,20 @@ typedef struct bondedDefines
 	int np;
 } BONDED_DEFINES;
 
+typedef struct nonbondedAtomtypes
+{
+	char name[10], ptype[10];
+	int atomicNumber;
+	float atomicMass, atomicCharge, c6, c12;
+} NONBONDED_ATOMTYPES;
+
+typedef struct nonbondedParams
+{
+	char i, j;
+	int func;
+	float c6, c12;
+} NONBONDED_PARAMS;
+
 TOPOLOGY_ATOMS *readTopAtoms (FILE *topolTopITP, TOPOLOGY_BOOL topCurrentPosition, TOPOLOGY_ATOMS *inputAtoms, int *nAtoms)
 {
 	rewind (topolTopITP);
@@ -219,6 +233,7 @@ int main(int argc, char const *argv[])
 	ffNonbondedITP_output = fopen (argv[5], "w");
 	topolTopITP_output = fopen (argv[6], "w");
 
+	// Structs to store information from topology file
 	TOPOLOGY_BOOL topCurrentPosition;
 	TOPOLOGY_ATOMS *inputAtoms;
 	TOPOLOGY_BONDS *inputBonds;
@@ -228,12 +243,21 @@ int main(int argc, char const *argv[])
 	POSITIONAL_RESTRAINTS *inputRestraints;
 	TOPOLOGY_SYSTEM *inputSystem;
 	TOPOLOGY_MOLECULE *inputMolecule;
-	BONDED_DEFINES *inputBondDefines, *inputAngleDefines, *inputProperDihedralDefines, *inputImproperDihedralDefines;
 
+	// Structs to store bonded interactions
+	BONDED_DEFINES *inputBondDefines, *inputAngleDefines, *inputProperDihedralDefines, *inputImproperDihedralDefines;
 	int nAtoms, nBondDefines, nAngleDefines, nProperDihedralDefines, nImproperDihedralDefines;
 
+	// Structs to store non-bonded interactions
+	NONBONDED_ATOMTYPES *inputNonbondedAtomtypes;
+	NONBONDED_PARAMS *inputNonbondedParams;
+	int nNonbondedAtomtypes, nNonbondedParams;
+
 	inputAtoms = readTopAtoms (topolTopITP, topCurrentPosition, inputAtoms, &nAtoms);
+
 	readBondedITP (ffBondedITP, topCurrentPosition, &inputBondDefines, &inputAngleDefines, &inputProperDihedralDefines, &inputImproperDihedralDefines, &nBondDefines, &nAngleDefines, &nProperDihedralDefines, &nImproperDihedralDefines);
+
+	readNonbondedITP ();
 
 	fclose (ffBondedITP);
 	fclose (ffNonbondedITP);
