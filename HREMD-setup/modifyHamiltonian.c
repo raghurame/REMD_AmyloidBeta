@@ -21,7 +21,7 @@ Segments in topol.top
 
 typedef struct topologyBool
 {
-	int moleculeType, atoms, bonds, pairs, angles, dihedrals, posre, system, molecules;
+	int moleculeType, atoms, bonds, pairs, angles, dihedrals, posre, system, molecules, atomTypes, nonbondedParams;
 } TOPOLOGY_BOOL;
 
 typedef struct topologyAtoms
@@ -224,7 +224,18 @@ void readBondedITP (FILE *ffBondedITP, TOPOLOGY_BOOL topCurrentPosition, BONDED_
 
 void readNonbondedITP (FILE *ffNonbondedITP, TOPOLOGY_BOOL topCurrentPosition, NONBONDED_ATOMTYPES **inputNonbondedAtomtypes, NONBONDED_PARAMS **inputNonbondedParams, int *nNonbondedAtomtypes, int *nNonbondedParams)
 {
+	char lineString[2000], rawString[2000];
+	rewind (ffNonbondedITP);
 
+	while (fgets (rawString, 2000, ffNonbondedITP) != NULL)
+	{
+		if (rawString[0] != ';')
+		{
+			for (int i = 0; rawString[i] != ';'; ++i) {
+				lineString[i] = rawString[i];
+				lineString[i + 1] = '\0'; }
+		}
+	}
 }
 
 int main(int argc, char const *argv[])
