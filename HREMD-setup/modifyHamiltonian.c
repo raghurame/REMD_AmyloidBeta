@@ -158,7 +158,7 @@ TOPOLOGY_ATOMS *readTopAtoms (FILE *topolTopITP, TOPOLOGY_BOOL topCurrentPositio
 	return inputAtoms;
 }
 
-BONDED_DEFINES *readBondedITP (FILE *ffBondedITP, TOPOLOGY_BOOL topCurrentPosition, BONDED_DEFINES **inputBondDefines, BONDED_DEFINES **inputAngleDefines, BONDED_DEFINES **inputProperDihedralDefines, BONDED_DEFINES **inputImproperDihedralDefines, int *nBondDefines, int *nAngleDefines, int *nProperDihedralDefines, int *nImproperDihedralDefines)
+void readBondedITP (FILE *ffBondedITP, TOPOLOGY_BOOL topCurrentPosition, BONDED_DEFINES **inputBondDefines, BONDED_DEFINES **inputAngleDefines, BONDED_DEFINES **inputProperDihedralDefines, BONDED_DEFINES **inputImproperDihedralDefines, int *nBondDefines, int *nAngleDefines, int *nProperDihedralDefines, int *nImproperDihedralDefines)
 {
 	rewind (ffBondedITP);
 	char lineString[2000];
@@ -220,6 +220,10 @@ BONDED_DEFINES *readBondedITP (FILE *ffBondedITP, TOPOLOGY_BOOL topCurrentPositi
 				currentProperDihedralDefine++; }
 		}
 	}
+}
+
+void readNonbondedITP (FILE *ffNonbondedITP, TOPOLOGY_BOOL topCurrentPosition, NONBONDED_ATOMTYPES **inputNonbondedAtomtypes, NONBONDED_PARAMS **inputNonbondedParams, int *nNonbondedAtomtypes, int *nNonbondedParams)
+{
 
 }
 
@@ -257,7 +261,7 @@ int main(int argc, char const *argv[])
 
 	readBondedITP (ffBondedITP, topCurrentPosition, &inputBondDefines, &inputAngleDefines, &inputProperDihedralDefines, &inputImproperDihedralDefines, &nBondDefines, &nAngleDefines, &nProperDihedralDefines, &nImproperDihedralDefines);
 
-	readNonbondedITP ();
+	readNonbondedITP (ffNonbondedITP, topCurrentPosition, &inputNonbondedAtomtypes, &inputNonbondedParams, &nNonbondedAtomtypes, &nNonbondedParams);
 
 	fclose (ffBondedITP);
 	fclose (ffNonbondedITP);
