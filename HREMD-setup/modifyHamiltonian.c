@@ -98,6 +98,9 @@ TOPOLOGY_ATOMS *readTopAtoms (FILE *topolTopITP, TOPOLOGY_BOOL topCurrentPositio
 	rewind (topolTopITP);
 	char lineString[2000], atomString[2000];
 
+	// Resetting the position bool
+	topCurrentPosition.atoms = 0;
+
 	(*nAtoms) = 0;
 
 	// Counting the number of entries in the [ atoms ] directive
@@ -121,6 +124,9 @@ TOPOLOGY_ATOMS *readTopAtoms (FILE *topolTopITP, TOPOLOGY_BOOL topCurrentPositio
 				topCurrentPosition.atoms = 1; }
 		}
 	}
+
+	// Resetting the position bool
+	topCurrentPosition.atoms = 0;
 
 	// One empty line was also counted in the previous loop
 	printf("Number of atoms detected in topology file: %d\n", (*nAtoms) - 1);
@@ -225,8 +231,14 @@ void readBondedITP (FILE *ffBondedITP, TOPOLOGY_BOOL topCurrentPosition, BONDED_
 void readNonbondedITP (FILE *ffNonbondedITP, TOPOLOGY_BOOL topCurrentPosition, NONBONDED_ATOMTYPES **inputNonbondedAtomtypes, NONBONDED_PARAMS **inputNonbondedParams, int *nNonbondedAtomtypes, int *nNonbondedParams)
 {
 	char lineString[2000], rawString[2000];
+
+	redocounting: ;
+	topCurrentPosition.atomTypes = 0;
+	topCurrentPosition.nonbondedParams = 0;
+	int nAtomtypes = 0, nParams = 0;
 	rewind (ffNonbondedITP);
 
+	// Count the number of entries under each directive
 	while (fgets (rawString, 2000, ffNonbondedITP) != NULL)
 	{
 		if (rawString[0] != ';')
@@ -234,6 +246,79 @@ void readNonbondedITP (FILE *ffNonbondedITP, TOPOLOGY_BOOL topCurrentPosition, N
 			for (int i = 0; rawString[i] != ';'; ++i) {
 				lineString[i] = rawString[i];
 				lineString[i + 1] = '\0'; }
+
+			if (strlen (lineString) > 1)
+			{
+				if (topCurrentPosition.atomTypes == 1 && lineString[0] == '[') 	{
+					topCurrentPosition.atomTypes = 0; }
+
+				if (topCurrentPosition.atomTypes == 1) {
+					nAtomtypes++; }
+
+				if (strstr (lineString, "[ atomtypes ]")) {
+					topCurrentPosition.atomTypes = 1; }
+
+				if (topCurrentPosition.nonbondedParams == 1 && lineString[0] == '[') {
+					topCurrentPosition.nonbondedParams = 0; }
+
+				if (topCurrentPosition.nonbondedParams == 1) {
+					nParams++; }
+
+				if (strstr (lineString, "[ nonbond_params ]")) {
+					topCurrentPosition.nonbondedParams = 1; }
+			}
+		}
+	}
+
+	if (nAtomtypes == 0 || nParams == 0) {
+		printf("Counting again...\n");
+		fflush (stdout);
+		goto redocounting; }
+
+	printf("\nAllocating %d memory for (*inputNonbondedAtomtypes)\nAllocating %d memory for (*inputNonbondedParams)\n\n", nAtomtypes, nParams);
+
+	// Allocating memory
+	(*inputNonbondedAtomtypes) = (NONBONDED_ATOMTYPES *) malloc (nAtomtypes * sizeof (NONBONDED_ATOMTYPES));
+	(*inputNonbondedParams) = (NONBONDED_PARAMS *) malloc (nParams * sizeof (NONBONDED_PARAMS));
+
+	topCurrentPosition.atomTypes = 0;
+	topCurrentPosition.nonbondedParams = 0;
+
+	int currentAtomtype = 0, currentParams = 0;
+
+	// Save information
+	rewind (ffNonbondedITP);
+	while (fgets (rawString, 2000, ffNonbondedITP) != NULL)
+	{
+		if (rawString[0] != ';')
+		{
+			for (int i = 0; rawString[i] != ';'; ++i) {
+				lineString[i] = rawString[i];
+				lineString[i + 1] = '\0'; }
+
+			if (topCurrentPosition.atomTypes == 1 && lineString[0] == '[') 	{
+				topCurrentPosition.atomTypes = 0; }
+
+			if (topCurrentPosition.atomTypes == 1)
+			{
+				sscanf (lineString, "%s %d %f %f %s %f %f\n", &(*inputNonbondedAtomtypes)[currentAtomtype].name, &(*inputNonbondedAtomtypes)[currentAtomtype].atomicNumber, &(*inputNonbondedAtomtypes)[currentAtomtype].atomicMass, &(*inputNonbondedAtomtypes)[currentAtomtype].atomicCharge, &(*inputNonbondedAtomtypes)[currentAtomtype].ptype, &(*inputNonbondedAtomtypes)[currentAtomtype].c6, &(*inputNonbondedAtomtypes)[currentAtomtype].c12);
+				currentAtomtype++;
+			}
+
+			if (strstr (lineString, "[ atomtypes ]")) {
+				topCurrentPosition.atomTypes = 1; }
+
+			if (topCurrentPosition.nonbondedParams == 1 && lineString[0] == '[') {
+				topCurrentPosition.nonbondedParams = 0; }
+
+			if (topCurrentPosition.nonbondedParams == 1)
+			{
+				sscanf (lineString, "%s %s %d %f %f\n", &(*inputNonbondedParams)[currentParams].i, &(*inputNonbondedParams)[currentParams].j, &(*inputNonbondedParams)[currentParams].func, &(*inputNonbondedParams)[currentParams].c6, &(*inputNonbondedParams)[currentParams].c12);
+				currentParams++;
+			}
+
+			if (strstr (lineString, "[ nonbond_params ]")) {
+				topCurrentPosition.nonbondedParams = 1; }
 		}
 	}
 }
@@ -273,6 +358,20 @@ int main(int argc, char const *argv[])
 	readBondedITP (ffBondedITP, topCurrentPosition, &inputBondDefines, &inputAngleDefines, &inputProperDihedralDefines, &inputImproperDihedralDefines, &nBondDefines, &nAngleDefines, &nProperDihedralDefines, &nImproperDihedralDefines);
 
 	readNonbondedITP (ffNonbondedITP, topCurrentPosition, &inputNonbondedAtomtypes, &inputNonbondedParams, &nNonbondedAtomtypes, &nNonbondedParams);
+
+	free (inputBondDefines);
+	free (inputAngleDefines);
+	free (inputProperDihedralDefines);
+	free (inputImproperDihedralDefines);
+
+	free (inputAtoms);
+	// free (inputBonds);
+	// free (inputPairs);
+	// free (inputAngles);
+	// free (inputDihedrals);
+	// free (inputRestraints);
+	// free (inputSystem);
+	// free (inputMolecule);
 
 	fclose (ffBondedITP);
 	fclose (ffNonbondedITP);
