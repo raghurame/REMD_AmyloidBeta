@@ -235,7 +235,8 @@ void readNonbondedITP (FILE *ffNonbondedITP, TOPOLOGY_BOOL topCurrentPosition, N
 	redocounting: ;
 	topCurrentPosition.atomTypes = 0;
 	topCurrentPosition.nonbondedParams = 0;
-	int nAtomtypes = 0, nParams = 0;
+	(*nNonbondedAtomtypes) = 0;
+	(*nNonbondedParams) = 0;
 	rewind (ffNonbondedITP);
 
 	// Count the number of entries under each directive
@@ -253,7 +254,7 @@ void readNonbondedITP (FILE *ffNonbondedITP, TOPOLOGY_BOOL topCurrentPosition, N
 					topCurrentPosition.atomTypes = 0; }
 
 				if (topCurrentPosition.atomTypes == 1) {
-					nAtomtypes++; }
+					(*nNonbondedAtomtypes)++; }
 
 				if (strstr (lineString, "[ atomtypes ]")) {
 					topCurrentPosition.atomTypes = 1; }
@@ -262,7 +263,7 @@ void readNonbondedITP (FILE *ffNonbondedITP, TOPOLOGY_BOOL topCurrentPosition, N
 					topCurrentPosition.nonbondedParams = 0; }
 
 				if (topCurrentPosition.nonbondedParams == 1) {
-					nParams++; }
+					(*nNonbondedParams)++; }
 
 				if (strstr (lineString, "[ nonbond_params ]")) {
 					topCurrentPosition.nonbondedParams = 1; }
@@ -270,16 +271,16 @@ void readNonbondedITP (FILE *ffNonbondedITP, TOPOLOGY_BOOL topCurrentPosition, N
 		}
 	}
 
-	if (nAtomtypes == 0 || nParams == 0) {
+	if ((*nNonbondedAtomtypes) == 0 || (*nNonbondedParams) == 0) {
 		printf("Counting again...\n");
 		fflush (stdout);
 		goto redocounting; }
 
-	printf("\nAllocating %d memory for (*inputNonbondedAtomtypes)\nAllocating %d memory for (*inputNonbondedParams)\n\n", nAtomtypes, nParams);
+	printf("\nAllocating %d memory for (*inputNonbondedAtomtypes)\nAllocating %d memory for (*inputNonbondedParams)\n\n", (*nNonbondedAtomtypes), (*nNonbondedParams));
 
 	// Allocating memory
-	(*inputNonbondedAtomtypes) = (NONBONDED_ATOMTYPES *) malloc (nAtomtypes * sizeof (NONBONDED_ATOMTYPES));
-	(*inputNonbondedParams) = (NONBONDED_PARAMS *) malloc (nParams * sizeof (NONBONDED_PARAMS));
+	(*inputNonbondedAtomtypes) = (NONBONDED_ATOMTYPES *) malloc ((*nNonbondedAtomtypes) * sizeof (NONBONDED_ATOMTYPES));
+	(*inputNonbondedParams) = (NONBONDED_PARAMS *) malloc ((*nNonbondedParams) * sizeof (NONBONDED_PARAMS));
 
 	topCurrentPosition.atomTypes = 0;
 	topCurrentPosition.nonbondedParams = 0;
