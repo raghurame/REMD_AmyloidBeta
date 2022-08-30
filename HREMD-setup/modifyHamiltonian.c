@@ -248,6 +248,9 @@ void readNonbondedITP (FILE *ffNonbondedITP, TOPOLOGY_BOOL topCurrentPosition, N
 				lineString[i] = rawString[i];
 				lineString[i + 1] = '\0'; }
 
+			if ((*nNonbondedAtomtypes) == 0 || (*nNonbondedParams) == 0) {
+				printf("%s\n", lineString); }
+
 			if (strlen (lineString) > 1)
 			{
 				if (topCurrentPosition.atomTypes == 1 && lineString[0] == '[') 	{
@@ -274,6 +277,7 @@ void readNonbondedITP (FILE *ffNonbondedITP, TOPOLOGY_BOOL topCurrentPosition, N
 	if ((*nNonbondedAtomtypes) == 0 || (*nNonbondedParams) == 0) {
 		printf("Counting again...\n");
 		fflush (stdout);
+		sleep (1);
 		goto redocounting; }
 
 	printf("\nAllocating %d memory for (*inputNonbondedAtomtypes)\nAllocating %d memory for (*inputNonbondedParams)\n\n", (*nNonbondedAtomtypes), (*nNonbondedParams));
