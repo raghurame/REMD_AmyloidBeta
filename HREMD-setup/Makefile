@@ -7,4 +7,4 @@ all:
 compile:
 	gcc -o modifyHamiltonian modifyHamiltonian.c -lm -Wall -fstack-protector
 run:
-	./modifyHamiltonian ffbonded.itp ffnonbonded.itp topol.top ffbonded_modified.itp ffnonbonded_modified.itp topol_modified.top 0.7
+	./modifyHamiltonian ffbonded.itp ffnonbonded.itp topol.top ffbonded_modified.itp ffnonbonded_modified.itp topol_modified.top 0.7 hotResidues.input hotInteractions.input

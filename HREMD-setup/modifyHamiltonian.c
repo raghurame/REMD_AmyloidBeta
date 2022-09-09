@@ -88,10 +88,20 @@ typedef struct nonbondedAtomtypes
 
 typedef struct nonbondedParams
 {
-	char i, j;
+	char i[10], j[10];
 	int func;
 	float c6, c12;
 } NONBONDED_PARAMS;
+
+typedef struct hotResidues
+{
+	char resName[10];
+} HOT_RESIDUES;
+
+typedef struct hotInteractions
+{
+	char resName1[10], resName2[10];
+} HOT_INTERACTIONS;
 
 TOPOLOGY_ATOMS *readTopAtoms (FILE *topolTopITP, TOPOLOGY_BOOL topCurrentPosition, TOPOLOGY_ATOMS *inputAtoms, int *nAtoms, FILE *topolTopITP_output, float lambda)
 {
@@ -284,7 +294,7 @@ void readBondedITP (FILE *ffBondedITP, TOPOLOGY_BOOL topCurrentPosition, BONDED_
 	}
 }
 
-void readNonbondedITP (FILE *ffNonbondedITP, TOPOLOGY_BOOL topCurrentPosition, NONBONDED_ATOMTYPES **inputNonbondedAtomtypes, NONBONDED_PARAMS **inputNonbondedParams, int *nNonbondedAtomtypes, int *nNonbondedParams, FILE *ffBondedITP_output, float lambda)
+void readNonbondedITP (FILE *ffNonbondedITP, TOPOLOGY_BOOL topCurrentPosition, NONBONDED_ATOMTYPES **inputNonbondedAtomtypes, NONBONDED_PARAMS **inputNonbondedParams, int *nNonbondedAtomtypes, int *nNonbondedParams, FILE *ffNonbondedITP_output, float lambda)
 {
 	char lineString[2000], rawString[2000];
 
@@ -403,7 +413,7 @@ void readNonbondedITP (FILE *ffNonbondedITP, TOPOLOGY_BOOL topCurrentPosition, N
 					&(*inputNonbondedParams)[currentParams].func, 
 					&(*inputNonbondedParams)[currentParams].c6, 
 					&(*inputNonbondedParams)[currentParams].c12);
-				
+
 				currentParams++;
 			}
 
@@ -413,17 +423,66 @@ void readNonbondedITP (FILE *ffNonbondedITP, TOPOLOGY_BOOL topCurrentPosition, N
 	}
 }
 
+HOT_RESIDUES *readHotResNames (FILE *hotResidues, HOT_RESIDUES *hotResNames, int *nHotResNames)
+{
+	// Reading the number of lines in input file
+	int nLines = 0;
+	char lineString[1000];
+
+	while (fgets (lineString, 1000, hotResidues) != NULL) {
+		nLines++; }
+
+	hotResNames = (HOT_RESIDUES *) malloc (nLines * sizeof (HOT_RESIDUES));
+	(*nHotResNames) = nLines;
+
+	// Storing the values from input file
+	rewind (hotResidues);
+	nLines = 0;
+
+	while (fgets (lineString, 1000, hotResidues) != NULL)
+	{
+		sscanf (lineString, "%s\n", &hotResNames[nLines].resName);
+		nLines++;
+	}
+
+	return hotResNames;
+}
+
+HOT_INTERACTIONS *readHotInteractionResNames (FILE *hotInteractions, HOT_INTERACTIONS *hotInteractionResNames, int *nHotInteractionResNames)
+{
+	// Reading the number of lines in input file
+	int nLines = 0;
+	char lineString[1000];
+	
+	while (fgets (lineString, 1000, hotInteractions) != NULL) {
+		nLines++; }
+
+	hotInteractionResNames = (HOT_INTERACTIONS *) malloc (nLines * sizeof (HOT_INTERACTIONS));
+	(*nHotInteractionResNames) = nLines;
+
+	// Storing the values from input file
+	rewind (hotInteractions);
+	nLines = 0;
+
+	while (fgets (lineString, 1000, hotInteractions) != NULL) {
+		sscanf (lineString, "%s %s\n", &hotInteractionResNames[nLines].resName1, &hotInteractionResNames[nLines].resName2);
+		nLines++; }
+
+	return hotInteractionResNames;
+}
+
 int main(int argc, char const *argv[])
 {
-	FILE *ffBondedITP, *ffNonbondedITP, *topolTopITP, *ffBondedITP_output, *ffNonbondedITP_output, *topolTopITP_output;
+	FILE *ffBondedITP, *ffNonbondedITP, *topolTopITP, *ffBondedITP_output, *ffNonbondedITP_output, *topolTopITP_output, *hotResidues, *hotInteractions;
 	ffBondedITP = fopen (argv[1], "r");
 	ffNonbondedITP = fopen (argv[2], "r");
 	topolTopITP = fopen (argv[3], "r");
 	ffBondedITP_output = fopen (argv[4], "w");
 	ffNonbondedITP_output = fopen (argv[5], "w");
 	topolTopITP_output = fopen (argv[6], "w");
-
 	float lambda = atof (argv[7]);
+	hotResidues = fopen (argv[8], "r");
+	hotInteractions = fopen (argv[9], "r");
 
 	// Structs to store information from topology file
 	TOPOLOGY_BOOL topCurrentPosition;
@@ -449,7 +508,14 @@ int main(int argc, char const *argv[])
 
 	readBondedITP (ffBondedITP, topCurrentPosition, &inputBondDefines, &inputAngleDefines, &inputProperDihedralDefines, &inputImproperDihedralDefines, &nBondDefines, &nAngleDefines, &nProperDihedralDefines, &nImproperDihedralDefines, ffBondedITP_output, lambda);
 
-	readNonbondedITP (ffNonbondedITP, topCurrentPosition, &inputNonbondedAtomtypes, &inputNonbondedParams, &nNonbondedAtomtypes, &nNonbondedParams, ffNonbondedITP_output, lambda);
+	// Reading hot residues and hot interactions for Hamiltonian modification
+	HOT_RESIDUES *hotResNames; int nHotResNames;
+	HOT_INTERACTIONS *hotInteractionResNames; int nHotInteractionResNames;
+
+	hotResNames = readHotResNames (hotResidues, hotResNames, &nHotResNames);
+	hotInteractionResNames = readHotInteractionResNames (hotInteractions, hotInteractionResNames, &nHotInteractionResNames);
+
+	readNonbondedITP (ffNonbondedITP, topCurrentPosition, &inputNonbondedAtomtypes, &inputNonbondedParams, &nNonbondedAtomtypes, &nNonbondedParams, ffNonbondedITP_output, lambda, hotResNames, hotInteractionResNames);
 
 	free (inputBondDefines);
 	free (inputAngleDefines);
