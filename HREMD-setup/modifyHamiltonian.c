@@ -83,14 +83,15 @@ typedef struct nonbondedAtomtypes
 {
 	char name[10], ptype[10];
 	int atomicNumber;
-	float atomicMass, atomicCharge, c6, c12;
+	float atomicMass, atomicCharge;
+	double c6, c12;
 } NONBONDED_ATOMTYPES;
 
 typedef struct nonbondedParams
 {
 	char i[10], j[10];
 	int func;
-	float c6, c12;
+	double c6, c12;
 } NONBONDED_PARAMS;
 
 typedef struct hotResidues
@@ -294,9 +295,10 @@ void readBondedITP (FILE *ffBondedITP, TOPOLOGY_BOOL topCurrentPosition, BONDED_
 	}
 }
 
-void readNonbondedITP (FILE *ffNonbondedITP, TOPOLOGY_BOOL topCurrentPosition, NONBONDED_ATOMTYPES **inputNonbondedAtomtypes, NONBONDED_PARAMS **inputNonbondedParams, int *nNonbondedAtomtypes, int *nNonbondedParams, FILE *ffNonbondedITP_output, float lambda)
+void readNonbondedITP (FILE *ffNonbondedITP, TOPOLOGY_BOOL topCurrentPosition, NONBONDED_ATOMTYPES **inputNonbondedAtomtypes, NONBONDED_PARAMS **inputNonbondedParams, int *nNonbondedAtomtypes, int *nNonbondedParams, FILE *ffNonbondedITP_output, float lambda, HOT_RESIDUES *hotResNames, int nHotResNames, HOT_INTERACTIONS *hotInteractionResNames, int nHotInteractionResNames)
 {
 	char lineString[2000], rawString[2000];
+	int debuggMode = 0;
 
 	redocounting: ;
 	topCurrentPosition.atomTypes = 0;
@@ -337,13 +339,20 @@ void readNonbondedITP (FILE *ffNonbondedITP, TOPOLOGY_BOOL topCurrentPosition, N
 				if (strstr (lineString, "[ nonbond_params ]")) {
 					topCurrentPosition.nonbondedParams = 1; }
 			}
+
+			if (debuggMode == 1)
+			{
+				printf("%s", lineString);
+				usleep (10000);
+			}
 		}
 	}
 
 	if (nNonbondedAtomtypes_local == 0 || nNonbondedParams_local == 0) {
 		printf("Counting again...\n");
 		fflush (stdout);
-		sleep (10);
+		debuggMode = 1;
+		sleep (1);
 		goto redocounting; }
 
 	printf("\nAllocating %d memory for (*inputNonbondedAtomtypes)\nAllocating %d memory for (*inputNonbondedParams)\n\n", nNonbondedAtomtypes_local, nNonbondedParams_local);
@@ -374,9 +383,9 @@ void readNonbondedITP (FILE *ffNonbondedITP, TOPOLOGY_BOOL topCurrentPosition, N
 				topCurrentPosition.atomTypes = 0;
 				fprintf(ffNonbondedITP_output, "%s\n", lineString); }
 
-			if (topCurrentPosition.atomTypes == 1)
+			if (topCurrentPosition.atomTypes == 1 && lineString[0] != '#')
 			{
-				sscanf (lineString, "%s %d %f %f %s %f %f\n", 
+				sscanf (lineString, "%s %d %f %f %s %lf %lf\n", 
 					&(*inputNonbondedAtomtypes)[currentAtomtype].name, 
 					&(*inputNonbondedAtomtypes)[currentAtomtype].atomicNumber, 
 					&(*inputNonbondedAtomtypes)[currentAtomtype].atomicMass, 
@@ -385,16 +394,23 @@ void readNonbondedITP (FILE *ffNonbondedITP, TOPOLOGY_BOOL topCurrentPosition, N
 					&(*inputNonbondedAtomtypes)[currentAtomtype].c6, 
 					&(*inputNonbondedAtomtypes)[currentAtomtype].c12);
 
-				fprintf(ffNonbondedITP_output, "%s %d %f %f %s %f %f\n", 
-					(*inputNonbondedAtomtypes)[currentAtomtype].name, 
-					(*inputNonbondedAtomtypes)[currentAtomtype].atomicNumber, 
-					(*inputNonbondedAtomtypes)[currentAtomtype].atomicMass, 
-					(*inputNonbondedAtomtypes)[currentAtomtype].atomicCharge, 
-					(*inputNonbondedAtomtypes)[currentAtomtype].ptype, 
-					(*inputNonbondedAtomtypes)[currentAtomtype].c6 * lambda, 
-					(*inputNonbondedAtomtypes)[currentAtomtype].c12 * lambda);
+				if ((*inputNonbondedAtomtypes)[currentAtomtype].atomicNumber > 0)
+				{
+					fprintf(ffNonbondedITP_output, "%s\t%d\t%f\t%f\t%s\t%12.5E\t%12.5E\n", 
+						(*inputNonbondedAtomtypes)[currentAtomtype].name, 
+						(*inputNonbondedAtomtypes)[currentAtomtype].atomicNumber, 
+						(*inputNonbondedAtomtypes)[currentAtomtype].atomicMass, 
+						(*inputNonbondedAtomtypes)[currentAtomtype].atomicCharge, 
+						(*inputNonbondedAtomtypes)[currentAtomtype].ptype, 
+						(*inputNonbondedAtomtypes)[currentAtomtype].c6 * lambda, 
+						(*inputNonbondedAtomtypes)[currentAtomtype].c12 * lambda);
+				}
 
 				currentAtomtype++;
+			}
+			else if (topCurrentPosition.atomTypes == 1 && lineString[0] == '#')
+			{
+				fprintf(ffNonbondedITP_output, "%s", lineString);
 			}
 
 			if (strstr (lineString, "[ atomtypes ]")) {
@@ -407,12 +423,19 @@ void readNonbondedITP (FILE *ffNonbondedITP, TOPOLOGY_BOOL topCurrentPosition, N
 
 			if (topCurrentPosition.nonbondedParams == 1)
 			{
-				sscanf (lineString, "%s %s %d %f %f\n", 
+				sscanf (lineString, "%s %s %d %lf %lf\n", 
 					&(*inputNonbondedParams)[currentParams].i, 
 					&(*inputNonbondedParams)[currentParams].j, 
 					&(*inputNonbondedParams)[currentParams].func, 
 					&(*inputNonbondedParams)[currentParams].c6, 
 					&(*inputNonbondedParams)[currentParams].c12);
+
+				fprintf(ffNonbondedITP_output, "%s\t%s\t%d\t%12.5E\t%12.5E\n", 
+					(*inputNonbondedParams)[currentParams].i, 
+					(*inputNonbondedParams)[currentParams].j, 
+					(*inputNonbondedParams)[currentParams].func, 
+					(*inputNonbondedParams)[currentParams].c6 * lambda, 
+					(*inputNonbondedParams)[currentParams].c12 * lambda);
 
 				currentParams++;
 			}
@@ -515,7 +538,7 @@ int main(int argc, char const *argv[])
 	hotResNames = readHotResNames (hotResidues, hotResNames, &nHotResNames);
 	hotInteractionResNames = readHotInteractionResNames (hotInteractions, hotInteractionResNames, &nHotInteractionResNames);
 
-	readNonbondedITP (ffNonbondedITP, topCurrentPosition, &inputNonbondedAtomtypes, &inputNonbondedParams, &nNonbondedAtomtypes, &nNonbondedParams, ffNonbondedITP_output, lambda, hotResNames, hotInteractionResNames);
+	readNonbondedITP (ffNonbondedITP, topCurrentPosition, &inputNonbondedAtomtypes, &inputNonbondedParams, &nNonbondedAtomtypes, &nNonbondedParams, ffNonbondedITP_output, lambda, hotResNames, nHotResNames, hotInteractionResNames, nHotInteractionResNames);
 
 	free (inputBondDefines);
 	free (inputAngleDefines);
