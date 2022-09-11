@@ -403,7 +403,7 @@ void readNonbondedITP (FILE *ffNonbondedITP, TOPOLOGY_BOOL topCurrentPosition, N
 					&(*inputNonbondedAtomtypes)[currentAtomtype].c6, 
 					&(*inputNonbondedAtomtypes)[currentAtomtype].c12);
 
-				if ((*inputNonbondedAtomtypes)[currentAtomtype].atomicNumber == 0 && (*inputNonbondedAtomtypes)[currentAtomtype].atomicMass == 0 && (*inputNonbondedAtomtypes)[currentAtomtype].atomicCharge == 0)
+				if (strlen (lineString) > 5)
 				{
 					fprintf(stdout, "output => %s\t%d\t%f\t%f\t%s\t%12.5E\t%12.5E\n", 
 						(*inputNonbondedAtomtypes)[currentAtomtype].name, 
@@ -414,7 +414,6 @@ void readNonbondedITP (FILE *ffNonbondedITP, TOPOLOGY_BOOL topCurrentPosition, N
 						(*inputNonbondedAtomtypes)[currentAtomtype].c6 * lambda, 
 						(*inputNonbondedAtomtypes)[currentAtomtype].c12 * lambda);
 				}
-
 
 				currentAtomtype++;
 			}
