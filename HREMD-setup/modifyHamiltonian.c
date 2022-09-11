@@ -373,17 +373,26 @@ void readNonbondedITP (FILE *ffNonbondedITP, TOPOLOGY_BOOL topCurrentPosition, N
 	rewind (ffNonbondedITP);
 	while (fgets (rawString, 2000, ffNonbondedITP) != NULL)
 	{
+		printf("\n\n input => %s\n", rawString);
+
 		if (rawString[0] != ';')
 		{
+			// Remove any commented texts
 			for (int i = 0; rawString[i] != ';'; ++i) {
 				lineString[i] = rawString[i];
 				lineString[i + 1] = '\0'; }
 
+			// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+				// ATOM TYPES SECTION
+			// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			// Identify the end of 'atomtypes' section
 			if (topCurrentPosition.atomTypes == 1 && lineString[0] == '[') 	{
 				topCurrentPosition.atomTypes = 0;
-				fprintf(ffNonbondedITP_output, "%s\n", lineString); }
+				fprintf(stdout, "output => %s\n", lineString); }
 
-			if (topCurrentPosition.atomTypes == 1 && lineString[0] != '#')
+			// Check if the current line is from the 'atomtypes' directive
+			// Extract numbers only if it doesn't start with '#'
+			if (topCurrentPosition.atomTypes == 1 && lineString[0] != '#' && currentAtomtype < nNonbondedAtomtypes_local)
 			{
 				sscanf (lineString, "%s %d %f %f %s %lf %lf\n", 
 					&(*inputNonbondedAtomtypes)[currentAtomtype].name, 
@@ -394,9 +403,9 @@ void readNonbondedITP (FILE *ffNonbondedITP, TOPOLOGY_BOOL topCurrentPosition, N
 					&(*inputNonbondedAtomtypes)[currentAtomtype].c6, 
 					&(*inputNonbondedAtomtypes)[currentAtomtype].c12);
 
-				if ((*inputNonbondedAtomtypes)[currentAtomtype].atomicNumber > 0)
+				if ((*inputNonbondedAtomtypes)[currentAtomtype].atomicNumber == 0 && (*inputNonbondedAtomtypes)[currentAtomtype].atomicMass == 0 && (*inputNonbondedAtomtypes)[currentAtomtype].atomicCharge == 0)
 				{
-					fprintf(ffNonbondedITP_output, "%s\t%d\t%f\t%f\t%s\t%12.5E\t%12.5E\n", 
+					fprintf(stdout, "output => %s\t%d\t%f\t%f\t%s\t%12.5E\t%12.5E\n", 
 						(*inputNonbondedAtomtypes)[currentAtomtype].name, 
 						(*inputNonbondedAtomtypes)[currentAtomtype].atomicNumber, 
 						(*inputNonbondedAtomtypes)[currentAtomtype].atomicMass, 
@@ -406,22 +415,32 @@ void readNonbondedITP (FILE *ffNonbondedITP, TOPOLOGY_BOOL topCurrentPosition, N
 						(*inputNonbondedAtomtypes)[currentAtomtype].c12 * lambda);
 				}
 
+
 				currentAtomtype++;
 			}
+
+			// If the lines in 'atomtypes' directive starts with '#', then print it directly
 			else if (topCurrentPosition.atomTypes == 1 && lineString[0] == '#')
 			{
-				fprintf(ffNonbondedITP_output, "%s", lineString);
+				fprintf(stdout, "output => %s", lineString);
 			}
 
+			// Check for the beginning of 'atomtyes' directive
 			if (strstr (lineString, "[ atomtypes ]")) {
 				topCurrentPosition.atomTypes = 1;
-				fprintf(ffNonbondedITP_output, "%s\n", lineString); }
+				fprintf(stdout, "output => %s\n", lineString); }
 
+			// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+				// NONBONDED PARAMS SECTION
+			// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+			// Check for the end of 'nonbond_params' directive
 			if (topCurrentPosition.nonbondedParams == 1 && lineString[0] == '[') {
 				topCurrentPosition.nonbondedParams = 0;
-				fprintf(ffNonbondedITP_output, "%s\n", lineString); }
+				fprintf(stdout, "output => %s\n", lineString); }
 
-			if (topCurrentPosition.nonbondedParams == 1)
+			// Modifying and printing the lines in 'nonbond_params' directive
+			if (topCurrentPosition.nonbondedParams == 1 && currentParams < nNonbondedParams_local)
 			{
 				sscanf (lineString, "%s %s %d %lf %lf\n", 
 					&(*inputNonbondedParams)[currentParams].i, 
@@ -430,19 +449,30 @@ void readNonbondedITP (FILE *ffNonbondedITP, TOPOLOGY_BOOL topCurrentPosition, N
 					&(*inputNonbondedParams)[currentParams].c6, 
 					&(*inputNonbondedParams)[currentParams].c12);
 
-				fprintf(ffNonbondedITP_output, "%s\t%s\t%d\t%12.5E\t%12.5E\n", 
-					(*inputNonbondedParams)[currentParams].i, 
-					(*inputNonbondedParams)[currentParams].j, 
-					(*inputNonbondedParams)[currentParams].func, 
-					(*inputNonbondedParams)[currentParams].c6 * lambda, 
-					(*inputNonbondedParams)[currentParams].c12 * lambda);
+				if ((*inputNonbondedParams)[currentParams].func != 0)
+				{
+					fprintf(stdout, "output => %s\t%s\t%d\t%12.5E\t%12.5E\n", 
+						(*inputNonbondedParams)[currentParams].i, 
+						(*inputNonbondedParams)[currentParams].j, 
+						(*inputNonbondedParams)[currentParams].func, 
+						(*inputNonbondedParams)[currentParams].c6 * lambda, 
+						(*inputNonbondedParams)[currentParams].c12 * lambda);
+				}
 
 				currentParams++;
 			}
 
+			// Check for the beginning of 'nonbond_params' directive
 			if (strstr (lineString, "[ nonbond_params ]")) {
 				topCurrentPosition.nonbondedParams = 1; }
+
+			if (topCurrentPosition.atomTypes == 0 && topCurrentPosition.nonbondedParams == 0)
+			{
+				fprintf(stdout, "output => %s\n", lineString);
+			}
 		}
+
+		usleep (1000000);
 	}
 }
 
