@@ -465,6 +465,10 @@ void readNonbondedITP (FILE *ffNonbondedITP, TOPOLOGY_BOOL topCurrentPosition, N
 			if (strstr (lineString, "[ nonbond_params ]")) {
 				topCurrentPosition.nonbondedParams = 1; }
 
+
+			// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+				// PRINTING ANYTHING OTHER THAN ATOM TYPES AND NONBONDED PARAMS
+			// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 			if (topCurrentPosition.atomTypes == 0 && topCurrentPosition.nonbondedParams == 0)
 			{
 				fprintf(stdout, "output => %s\n", lineString);
