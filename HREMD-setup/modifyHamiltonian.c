@@ -6,6 +6,14 @@
 #include <unistd.h>
 
 /*
+KNOWN ISSUES:
+
+Not all values in [ atomtypes ] directives are being printed, esp when the numeric values are equal to 0.0
+The last row is repeated in the modified topology file
+
+*/
+
+/*
 Segments in topol.top
 
 [ moleculetype ]
@@ -168,7 +176,7 @@ TOPOLOGY_ATOMS *readTopAtoms (FILE *topolTopITP, TOPOLOGY_BOOL topCurrentPositio
 				sscanf (atomString, "%d\n", &currentAtom);
 				sscanf (atomString, "%d %s %d %s %s %d %f %f", &inputAtoms[currentAtom - 1].nr, &inputAtoms[currentAtom - 1].type, &inputAtoms[currentAtom - 1].resnr, &inputAtoms[currentAtom - 1].residue, &inputAtoms[currentAtom - 1].atom, &inputAtoms[currentAtom - 1].cgnr, &inputAtoms[currentAtom - 1].charge, &inputAtoms[currentAtom - 1].mass);
 
-				fprintf (topolTopITP_output, "%d\t\t%s\t\t%d\t\t%s\t\t%s\t\t%d\t\t%f\t\t%f\n", inputAtoms[currentAtom - 1].nr, inputAtoms[currentAtom - 1].type, inputAtoms[currentAtom - 1].resnr, inputAtoms[currentAtom - 1].residue, inputAtoms[currentAtom - 1].atom, inputAtoms[currentAtom - 1].cgnr, inputAtoms[currentAtom - 1].charge * lambda, inputAtoms[currentAtom - 1].mass);
+				fprintf (topolTopITP_output, "%d\t\t%s\t\t%d\t\t%s\t\t%s\t\t%d\t\t%f\t\t%f\n", inputAtoms[currentAtom - 1].nr, inputAtoms[currentAtom - 1].type, inputAtoms[currentAtom - 1].resnr, inputAtoms[currentAtom - 1].residue, inputAtoms[currentAtom - 1].atom, inputAtoms[currentAtom - 1].cgnr, inputAtoms[currentAtom - 1].charge * (float) sqrt (lambda), inputAtoms[currentAtom - 1].mass);
 			}
 
 			if (strstr (lineString, "[ atoms ]")) {
@@ -398,7 +406,7 @@ void readNonbondedITP (FILE *ffNonbondedITP, TOPOLOGY_BOOL topCurrentPosition, N
 
 				if (strlen (lineString) > 5)
 				{
-					fprintf(ffNonbondedITP_output, "%s\t%d\t%f\t%f\t%s\t%12.5E\t%12.5E\n", 
+					fprintf(ffNonbondedITP_output, "%s\t%d\t%f\t%f\t%s\t%12.5e\t%12.5e\n", 
 						(*inputNonbondedAtomtypes)[currentAtomtype].name, 
 						(*inputNonbondedAtomtypes)[currentAtomtype].atomicNumber, 
 						(*inputNonbondedAtomtypes)[currentAtomtype].atomicMass, 
