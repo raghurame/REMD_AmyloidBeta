@@ -195,6 +195,10 @@ TOPOLOGY_ATOMS *readTopAtoms (FILE *topolTopITP, TOPOLOGY_BOOL topCurrentPositio
 			{
 				if (strstr (lineString, "gromos53a6_M1.ff/forcefield.itp")) {
 					fprintf(topolTopITP_output, "#define _FF_GROMOS96\n#define _FF_GROMOS53A6\n\n[ defaults ]\n; nbfunc        comb-rule	gen-pairs	fudgeLJ fudgeQQ\n  1             1               no              1.0     1.0\n#include \"ffnonbonded.itp\"\n#include \"ffbonded.itp\"\n"); }
+				else if (strstr (lineString, "gromos53a6_M1.ff/spce.itp")) {
+					fprintf(topolTopITP_output, "#include \"spce.itp\"\n"); }
+				else if (strstr (lineString, "gromos53a6_M1.ff/ions.itp")) {
+					fprintf(topolTopITP_output, "#include \"ions.itp\"\n"); }
 				else {
 					fprintf(topolTopITP_output, "%s", lineString); }
 			}
