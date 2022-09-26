@@ -156,7 +156,7 @@ TOPOLOGY_ATOMS *readTopAtoms (FILE *topolTopITP, TOPOLOGY_BOOL topCurrentPositio
 	inputAtoms = (TOPOLOGY_ATOMS *) malloc ((*nAtoms + 1) * sizeof (TOPOLOGY_ATOMS));
 
 	rewind (topolTopITP);
-	int currentAtom = 0;
+	int currentAtom = 0, previousAtom = 0;
 
 	// Storing the information under [ atoms ] directive
 	while (fgets (lineString, 2000, topolTopITP) != NULL)
@@ -176,15 +176,28 @@ TOPOLOGY_ATOMS *readTopAtoms (FILE *topolTopITP, TOPOLOGY_BOOL topCurrentPositio
 				sscanf (atomString, "%d\n", &currentAtom);
 				sscanf (atomString, "%d %s %d %s %s %d %f %f", &inputAtoms[currentAtom - 1].nr, &inputAtoms[currentAtom - 1].type, &inputAtoms[currentAtom - 1].resnr, &inputAtoms[currentAtom - 1].residue, &inputAtoms[currentAtom - 1].atom, &inputAtoms[currentAtom - 1].cgnr, &inputAtoms[currentAtom - 1].charge, &inputAtoms[currentAtom - 1].mass);
 
-				fprintf (topolTopITP_output, "%d\t\t%s\t\t%d\t\t%s\t\t%s\t\t%d\t\t%f\t\t%f\n", inputAtoms[currentAtom - 1].nr, inputAtoms[currentAtom - 1].type, inputAtoms[currentAtom - 1].resnr, inputAtoms[currentAtom - 1].residue, inputAtoms[currentAtom - 1].atom, inputAtoms[currentAtom - 1].cgnr, inputAtoms[currentAtom - 1].charge * (float) sqrt (lambda), inputAtoms[currentAtom - 1].mass);
+				if ((inputAtoms[currentAtom - 1].nr > previousAtom) && (inputAtoms[currentAtom - 1].nr > 0))
+				{
+					fprintf (topolTopITP_output, "%d\t\t%s\t\t%d\t\t%s\t\t%s\t\t%d\t\t%f\t\t%f\n", inputAtoms[currentAtom - 1].nr, inputAtoms[currentAtom - 1].type, inputAtoms[currentAtom - 1].resnr, inputAtoms[currentAtom - 1].residue, inputAtoms[currentAtom - 1].atom, inputAtoms[currentAtom - 1].cgnr, inputAtoms[currentAtom - 1].charge * (float) sqrt (lambda), inputAtoms[currentAtom - 1].mass);
+					previousAtom = inputAtoms[currentAtom - 1].nr;
+				}
+				// else
+				// {
+				// 	fprintf(topolTopITP_output, "\n");
+				// }
 			}
 
 			if (strstr (lineString, "[ atoms ]")) {
 				fprintf(topolTopITP_output, "%s", lineString);
 				topCurrentPosition.atoms = 1; }
 
-			if (topCurrentPosition.atoms == 0) {
-				fprintf(topolTopITP_output, "%s", lineString); }
+			if (topCurrentPosition.atoms == 0)
+			{
+				if (strstr (lineString, "gromos53a6_M1.ff/forcefield.itp")) {
+					fprintf(topolTopITP_output, "#define _FF_GROMOS96\n#define _FF_GROMOS53A6\n\n[ defaults ]\n; nbfunc        comb-rule	gen-pairs	fudgeLJ fudgeQQ\n  1             1               no              1.0     1.0\n#include \"ffnonbonded.itp\"\n#include \"ffbonded.itp\"\n"); }
+				else {
+					fprintf(topolTopITP_output, "%s", lineString); }
+			}
 		}
 	}
 
