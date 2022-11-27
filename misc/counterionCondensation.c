@@ -22,6 +22,7 @@ int findNAtoms (FILE *input)
 	fgets (lineString, 1000, input);
 	sscanf (lineString, "%d", &nAtoms);
 
+	printf("Number of atoms identified: %d...\n", nAtoms);
 	rewind (input);
 	return nAtoms;
 }
@@ -66,7 +67,7 @@ INPUT_GRO *readInputCoordinates (INPUT_GRO *inputCoordinates, FILE *input, int n
 	return inputCoordinates;
 }
 
-int computeCondensedIons (INPUT_GRO *inputCoordinates, int nAtoms, char identifier[], float cutoff)
+int computeCondensedIons (INPUT_GRO *inputCoordinates, int nAtoms, char identifier[], float cutoff, char counterionName[])
 {
 	int nCondensed = 0;
 	int denom = 0;
@@ -79,11 +80,12 @@ int computeCondensedIons (INPUT_GRO *inputCoordinates, int nAtoms, char identifi
 			denom++;
 			for (int j = 0; j < nAtoms; ++j)
 			{
-				distance = sqrt (((inputCoordinates[i].x - inputCoordinates[j].x) * (inputCoordinates[i].x - inputCoordinates[j].x)) + ((inputCoordinates[i].y - inputCoordinates[j].y) * (inputCoordinates[i].y - inputCoordinates[j].y)) + ((inputCoordinates[i].z - inputCoordinates[j].z) * (inputCoordinates[i].z - inputCoordinates[j].z)));
-
-				if (distance < cutoff)
+				if (strstr (inputCoordinates[j].name, counterionName))
 				{
-					nCondensed++;
+					distance = sqrt (((inputCoordinates[i].x - inputCoordinates[j].x) * (inputCoordinates[i].x - inputCoordinates[j].x)) + ((inputCoordinates[i].y - inputCoordinates[j].y) * (inputCoordinates[i].y - inputCoordinates[j].y)) + ((inputCoordinates[i].z - inputCoordinates[j].z) * (inputCoordinates[i].z - inputCoordinates[j].z)));
+
+					if (distance < cutoff) {
+						nCondensed++; }
 				}
 			}
 		}	
@@ -96,7 +98,7 @@ int computeCondensedIons (INPUT_GRO *inputCoordinates, int nAtoms, char identifi
 
 int main(int argc, char const *argv[])
 {
-	if (argc != 4)
+	if (argc != 5)
 	{
 		printf("REQUIRED ARGUMENTS:\n~~~~~~~~~~~~~~~~~~\n\n{~} argv[0] = ./program\n{~} argv[1] = input *.gro file\n{~} argv[2] = output filename\n{~} argv[3] = cutoff distance between O and Na\n{~} argv[4] = cutoff distance between N and Na\n\n");
 		exit (1);
@@ -123,11 +125,17 @@ int main(int argc, char const *argv[])
 	{
 		inputCoordinates = readInputCoordinates (inputCoordinates, input, nAtoms);
 
-		condensed_Na_on_O[currentTimeframe] = computeCondensedIons (inputCoordinates, nAtoms, "O", cutoff_O);
-		condensed_Na_on_N[currentTimeframe] = computeCondensedIons (inputCoordinates, nAtoms, "N", cutoff_N);
+		condensed_Na_on_O[currentTimeframe] = computeCondensedIons (inputCoordinates, nAtoms, "O", cutoff_O, "Na");
+		condensed_Na_on_N[currentTimeframe] = computeCondensedIons (inputCoordinates, nAtoms, "N", cutoff_N, "Na");
 
 		currentTimeframe++;
 		checking = fgetc (input);
+	}
+
+	for (int i = 0; i < nFrames; ++i)
+	{
+		printf("%d\n", condensed_Na_on_O[i]);
+		sleep (1);
 	}
 
 	// Calculating average
