@@ -199,6 +199,9 @@ TOPOLOGY_ATOMS *readTopAtoms (FILE *topolTopITP, TOPOLOGY_BOOL topCurrentPositio
 					fprintf(topolTopITP_output, "#include \"spce.itp\"\n"); }
 				else if (strstr (lineString, "gromos53a6_M1.ff/ions.itp")) {
 					fprintf(topolTopITP_output, "#include \"ions.itp\"\n"); }
+				// Change this based on the available file
+				else if (strstr (lineString, "AU961_NSlab_C0125.itp")) {
+					fprintf(topolTopITP_output, "#include \"AU961_NSlab.itp\" in water\n"); }
 				else {
 					fprintf(topolTopITP_output, "%s", lineString); }
 			}
@@ -539,6 +542,12 @@ HOT_INTERACTIONS *readHotInteractionResNames (FILE *hotInteractions, HOT_INTERAC
 
 int main(int argc, char const *argv[])
 {
+	if (argc == 1)
+	{
+		(void)printf("MODIFY HAMILTONIAN:\n~~~~~~~~~~~~~~~~~~~\n\n{~} argv[0] = program\n{~} argv[1] = input ffbonded.itp\n{~} argv[2] = input ffnonbonded.itp\n{~} argv[3] = input topol.top\n{~} argv[4] = output ffbonded.itp\n{~} argv[5] = output ffnonbonded.itp\n{~} argv[6] = output topol.top\n{~} argv[7] = lambda scaling value\n{~} argv[8] = config file containing the hot residues\n{~} argv[9] = config file containing the hot interactions\n\n");
+		exit (1);
+	}
+
 	FILE *ffBondedITP, *ffNonbondedITP, *topolTopITP, *ffBondedITP_output, *ffNonbondedITP_output, *topolTopITP_output, *hotResidues, *hotInteractions;
 	ffBondedITP = fopen (argv[1], "r");
 	ffNonbondedITP = fopen (argv[2], "r");
